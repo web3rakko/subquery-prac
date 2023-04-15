@@ -25,35 +25,50 @@ network:
   # When developing your project we suggest getting a private API key
   # You can get them from OnFinality for free https://app.onfinality.io
   # https://documentation.onfinality.io/support/the-enhanced-api-service
-  endpoint: "https://eth.api.onfinality.io/public"
+  endpoint: "https://eth.api.onfinality.io/rpc?apikey=a3aa32d3-b075-447a-9ae6-e19d3bccb918"
   # Recommended to provide the HTTP endpoint of a full chain dictionary to speed up processing
   dictionary: "https://gx.api.subquery.network/sq/subquery/eth-dictionary"
 
 dataSources:
   - kind: ethereum/Runtime
-    startBlock: 15695385
+    startBlock: 6175243
     options:
       # Must be a key of assets
-      abi: erc20
-      address: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2" # this is the contract address for wrapped ether https://etherscan.io/address/0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2
+      abi: usdt
+      address: "0xdAC17F958D2ee523a2206206994597C13D831ec7" # The contract address of the Gravatar on Ethereum
     assets:
-      erc20:
-        file: "erc20.abi.json"
+      usdt:
+        file: "./abis/USDT.json"
     mapping:
       file: "./dist/index.js"
       handlers:
-        - handler: handleTransaction
-          kind: ethereum/TransactionHandler
-          filter:
-            ## The function can either be the function fragment or signature
-            # function: '0x095ea7b3'
-            # function: '0x7ff36ab500000000000000000000000000000000000000000000000000000000'
-            function: approve(address spender, uint256 rawAmount)
-        - handler: handleLog
+        - handler: handleUsdt
           kind: ethereum/LogHandler
           filter:
             topics:
               ## Follows standard log filters https://docs.ethers.io/v5/concepts/events/
-              - Transfer(address indexed from, address indexed to, uint256
-                amount)
-              # address: "0x60781C2586D68229fde47564546784ab3fACA982"
+              - Transfer ( address ,  address , uint256 )
+  - kind: ethereum/Runtime
+    startBlock: 6175243
+    options:
+      # Must be a key of assets
+      abi: gravity
+      address: "0x2E645469f354BB4F5c8a05B3b30A929361cf77eC" # The contract address of the Gravatar on Ethereum
+    assets:
+      gravity:
+        file: "./abis/Gravity.json"
+    mapping:
+      file: "./dist/index.js"
+      handlers:
+        - handler: handleNewGravatar
+          kind: ethereum/LogHandler
+          filter:
+            topics:
+              ## Follows standard log filters https://docs.ethers.io/v5/concepts/events/
+              - NewGravatar(uint256,address,string,string)
+        - handler: handleUpdatedGravatar
+          kind: ethereum/LogHandler
+          filter:
+            topics:
+              ## Follows standard log filters https://docs.ethers.io/v5/concepts/events/
+              - UpdatedGravatar(uint256,address,string,string)

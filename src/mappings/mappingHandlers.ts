@@ -1,35 +1,52 @@
-// Copyright 2020-2022 OnFinality Limited authors & contributors
-// SPDX-License-Identifier: Apache-2.0
-import { Approval, Transaction } from "../types";
 import {
-  ApproveTransaction,
-  TransferLog,
-} from "../types/abi-interfaces/Erc20Abi";
+  NewGravatarLog,
+  UpdatedGravatarLog,
+} from "../types/abi-interfaces/Gravity";
+import {Gravatar, USDT} from "../types";
+import {TransferLog} from "../types/abi-interfaces/USDT";
 
-export async function handleLog(log: TransferLog): Promise<void> {
-  logger.info(`New transfer transaction log at block ${log.blockNumber}`);
-  const transaction = Transaction.create({
-    id: log.transactionHash,
-    txHash: log.transactionHash,
-    blockHeight: BigInt(log.blockNumber),
-    to: log.args.to,
-    from: log.args.from,
-    value: log.args.value.toBigInt(),
-    contractAddress: log.address,
+export async function handleNewGravatar(log: NewGravatarLog): Promise<void> {
+  logger.info("New Gravar at block " + log.blockNumber.toString());
+  const gravatar = Gravatar.create({
+    id: log.args.id.toHexString(),
+    owner: log.args.owner,
+    displayName: log.args.displayName,
+    imageUrl: log.args.imageUrl,
+    createdBlock: BigInt(log.blockNumber),
   });
 
-  await transaction.save();
+  await gravatar.save();
 }
 
-export async function handleTransaction(tx: ApproveTransaction): Promise<void> {
-  logger.info(`New Approval transaction at block ${tx.blockNumber}`);
-  const approval = Approval.create({
-    id: tx.hash,
-    owner: tx.from,
-    spender: await tx.args[0],
-    value: BigInt(await tx.args[1].toString()),
-    contractAddress: tx.to,
+export async function handleUsdt(log:TransferLog): Promise<void> {
+  logger.info("USDT Transfer at block " + log.blockNumber.toString());
+  const usdt = USDT.create({
+    id: log.transaction.hash,
+    from: log.args.from,
+    to: log.args.to,
+    value: log.args.value.toBigInt(),
+    createdBlock: BigInt(log.blockNumber),
   });
 
-  await approval.save();
+
+  await usdt.save();
+}
+
+export async function handleUpdatedGravatar(
+    log: UpdatedGravatarLog
+): Promise<void> {
+  logger.info("Updated Gravar at block " + log.blockNumber.toString());
+  const id = log.args.id.toHexString();
+
+  // We first check if the Gravatar already exists, if not we create it
+  let gravatar = await Gravatar.get(id);
+  if (gravatar == null || gravatar == undefined) {
+    gravatar = new Gravatar(id);
+    gravatar.createdBlock = BigInt(log.blockNumber);
+  }
+  // Update with new data
+  gravatar.owner = log.args.owner;
+  gravatar.displayName = log.args.displayName;
+  gravatar.imageUrl = log.args.imageUrl;
+  await gravatar.save();
 }
